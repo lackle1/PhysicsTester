@@ -1,4 +1,6 @@
-﻿using System;
+﻿using SharpDX;
+using System;
+using System.Reflection.Metadata.Ecma335;
 
 namespace RePhysics
 {
@@ -6,9 +8,36 @@ namespace RePhysics
     {
         public static float Clamp(float value, float min, float max)
         {
+            if (min > max)
+            {
+                throw new ArgumentException("'min' cannot be more than 'max'.");
+            }
+
             if (value < min) { return min; }
             if (value > max) { return max; } 
             else { return value; }
+        }
+        public static float ClosestTo(float value, float a, float b)
+        {
+            //if (value < lower)
+            //{
+            //    return lower;
+            //}
+            //else if (value > upper)
+            //{
+            //    return upper;
+            //}
+            //else
+            //{
+            //    return value >= (upper + lower) / 2 ? upper : lower;
+            //}
+
+            if (MathF.Abs(a - value) < MathF.Abs(b - value))
+            {
+                return a;
+            }
+
+            return b;
         }
 
         public static float Length(ReVector v)
@@ -50,6 +79,51 @@ namespace RePhysics
         public static float Cross(ReVector a, ReVector b)
         {
             return a.X * b.Y - a.Y * b.X;
+        }
+
+        public static bool AboutEqual(float a, float b, float errorMargin)
+        {
+            return MathF.Abs(b - a) < errorMargin;
+        }
+        public static bool AboutEqual(ReVector a, ReVector b, float errorMargin)
+        {
+            //return AboutEqual(a.X, b.X, errorMargin) && AboutEqual(a.Y, b.Y, errorMargin);
+            return ReMath.DistanceSqrd(a, b) < errorMargin * errorMargin;
+        }
+
+        public static ReVector ClampOld(ReVector value, ReVector a, ReVector b) // Clamp 'value' between 'a' and 'b'
+        {
+            ReVector result = value;
+            float minX = MathF.Min(a.X, b.X);
+            float maxX = MathF.Max(a.X, b.X);
+            float minY = MathF.Min(a.Y, b.Y);
+            float maxY = MathF.Max(a.Y, b.Y);
+
+            result.X = MathF.Max(result.X, minX);
+            result.X = MathF.Min(result.X, maxX);
+            result.Y = MathF.Max(result.Y, minY);
+            result.Y = MathF.Min(result.Y, maxY);
+
+            return result;
+        }
+        public static ReVector Clamp(ReVector value, ReVector a, ReVector b) // Clamp 'value' between 'a' and 'b'
+        {
+            float minX = MathF.Min(a.X, b.X);
+            float maxX = MathF.Max(a.X, b.X);
+            float minY = MathF.Min(a.Y, b.Y);
+            float maxY = MathF.Max(a.Y, b.Y);
+
+            float clampedX = Clamp(value.X, minX, maxX);
+            float clampedY = Clamp(value.Y, minY, maxY);
+
+            return new ReVector(clampedX, clampedY);
+        }
+        public static float ClampBetween(float value, float a, float b) // If min/max is unknown
+        {
+            float min = Math.Min(a, b);
+            float max = Math.Max(a, b);
+
+            return Clamp(value, min, max);
         }
     }
 }

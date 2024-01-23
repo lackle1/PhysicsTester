@@ -10,7 +10,7 @@ namespace RePhysics
         {
             return new Microsoft.Xna.Framework.Vector2(v.X, v.Y);
         }
-        public static ReVector ToPVector(Vector2 v)
+        public static ReVector ReVector(Vector2 v)
         {
             return new ReVector(v.X, v.Y);
         }

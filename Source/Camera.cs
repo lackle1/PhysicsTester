@@ -76,6 +76,16 @@ namespace Grondslag
 
             return new Rectangle((int)(_pos.X - zoomedX / 2), (int)(_pos.Y - zoomedY / 2), (int)zoomedX, (int)zoomedY);
         }
+        public void GetExtents(out Vector2 min, out Vector2 max) // Doesn't account for rotation
+        {
+            float zoomedX = Globals.screenWidth / _zoom;
+            float zoomedY = Globals.screenHeight / _zoom;
+
+            //return new Rectangle((int)(_pos.X - zoomedX / 2), (int)(_pos.Y - zoomedY / 2), (int)zoomedX, (int)zoomedY);
+
+            min = new Vector2((int)(_pos.X - zoomedX / 2), (int)(_pos.Y - zoomedY / 2));
+            max = new Vector2((int)(_pos.X - zoomedX / 2) + zoomedX, (int)(_pos.Y - zoomedY / 2) + zoomedY);
+        }
 
         public Matrix GetMatrix()
         {

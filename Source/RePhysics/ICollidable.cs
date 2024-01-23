@@ -10,6 +10,13 @@ namespace RePhysics
             get;
             set;
         }
-        public ReBody CollisionBody { get; set; }
+        public float Angle
+        {
+            get;
+            set;
+        }
+        public ReBoxBody CollisionBody { get; set; }
+
+        public bool Remove {  get; set; }
     }
 }

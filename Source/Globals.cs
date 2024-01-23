@@ -36,6 +36,8 @@ namespace Grondslag
 
         public static bool hideCursor;
 
+        public static Vector2 MouseWorldPosition;
+
         public static float GetDistance(Vector2 pos, Vector2 target)
         {
             return (float)Math.Sqrt(Math.Pow(pos.X - target.X, 2) + Math.Pow(pos.Y - target.Y, 2));
@@ -51,22 +53,15 @@ namespace Grondslag
             return false;
         }
 
-        public static float ZeroOrCLosestIfBetween(float value, float lower, float higher)
+        public static float ZeroOrCLosestIfBetween(float value, float lower, float upper)
         {
             if (value == 0)
             {
                 return value;
             }
-            else if (value > lower && value < higher)
+            else if (value > lower && value < upper)
             {
-                //if (value >= (higher + lower) / 2)
-                //{
-                //    return higher;
-                //}
-
-                //return lower;
-
-                return value >= (higher + lower) / 2 ? higher : lower; // Same as above
+                return value >= (upper + lower) / 2 ? upper : lower;
             }
 
             return value;
@@ -95,7 +90,7 @@ namespace Grondslag
             {
                 Vector2 triangle = focus - pos;
 
-                float angle = (float)Math.Atan2(triangle.Y, triangle.X);
+                float angle = MathF.Atan2(triangle.Y, triangle.X);
 
                 return angle;
             }

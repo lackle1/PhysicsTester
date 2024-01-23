@@ -75,7 +75,7 @@ namespace Grondslag
 
         public virtual bool Hover()
         {
-            Vector2 mousePos = new Vector2(Globals.mouse.newMousePos.X, Globals.mouse.newMousePos.Y);
+            Vector2 mousePos = new Vector2(Globals.mouse.mousePos.X, Globals.mouse.mousePos.Y);
 
             if (mousePos.X >= pos.X - dims.X / 2 && mousePos.X <= pos.X + dims.X / 2 && mousePos.Y >= pos.Y - dims.Y / 2 && mousePos.Y <= pos.Y + dims.Y / 2)
             {
@@ -87,7 +87,7 @@ namespace Grondslag
 
         public virtual bool Hover(Vector2 offset)
         {
-            Vector2 mousePos = new Vector2(Globals.mouse.newMousePos.X, Globals.mouse.newMousePos.Y);
+            Vector2 mousePos = new Vector2(Globals.mouse.mousePos.X, Globals.mouse.mousePos.Y);
 
             if (mousePos.X >= pos.X + offset.X - dims.X / 2 && mousePos.X <= pos.X + offset.X + dims.X / 2 && mousePos.Y >= pos.Y + offset.Y - dims.Y / 2 && mousePos.Y <= pos.Y + offset.Y + dims.Y / 2)
             {

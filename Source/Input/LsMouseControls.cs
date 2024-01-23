@@ -11,7 +11,7 @@ namespace Grondslag
 
         private bool _dragging, _rightDrag;
 
-        public Vector2 newMousePos, oldMousePos, firstMousePos, newMouseAdjustedPos, systemCursorPos, screenLoc;
+        public Vector2 mousePos, oldMousePos, firstMousePos, systemCursorPos, screenLoc;
 
         public LsMouseControl()
         {
@@ -21,7 +21,7 @@ namespace Grondslag
             _oldMouse = _newMouse;
             _firstMouse = _newMouse;
 
-            newMousePos = new Vector2(_newMouse.Position.X, _newMouse.Position.Y);
+            mousePos = new Vector2(_newMouse.Position.X, _newMouse.Position.Y);
             oldMousePos = new Vector2(_newMouse.Position.X, _newMouse.Position.Y);
             firstMousePos = new Vector2(_newMouse.Position.X, _newMouse.Position.Y);
 
@@ -54,7 +54,7 @@ namespace Grondslag
             if (_newMouse.LeftButton == ButtonState.Pressed && _oldMouse.LeftButton == ButtonState.Released)
             {
                 _firstMouse = _newMouse;
-                firstMousePos = newMousePos = GetScreenPos(_firstMouse);
+                firstMousePos = mousePos = GetScreenPos(_firstMouse);
             }
 
 
@@ -68,13 +68,13 @@ namespace Grondslag
 
         public virtual float GetDistanceFromClick()
         {
-            return Globals.GetDistance(newMousePos, firstMousePos);
+            return Globals.GetDistance(mousePos, firstMousePos);
         }
 
         public virtual void GetMouseAndAdjust()
         {
             _newMouse = Mouse.GetState();
-            newMousePos = GetScreenPos(_newMouse);
+            mousePos = GetScreenPos(_newMouse);
 
         }
 

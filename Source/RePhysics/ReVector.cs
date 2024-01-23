@@ -30,6 +30,10 @@ namespace RePhysics
         {
             return new ReVector(v.X * s, v.Y * s);
         }
+        public static ReVector operator *(float s, ReVector v) // Same, reversed parameters
+        {
+            return new ReVector(v.X * s, v.Y * s);
+        }
         public static ReVector operator /(ReVector v, float s)
         {
             return new ReVector(v.X / s, v.Y / s);
@@ -85,11 +89,15 @@ namespace RePhysics
             return new ReVector(X /  len, Y / len);
         }
 
+        public bool Equals(ReVector other)
+        {
+            return this.X == other.X && this.Y == other.Y;
+        }
         public override bool Equals(object obj)
         {
             if (obj is ReVector other)
             {
-                return Equals(other);
+                return Equals(other); // StackOverflow error?
             }
 
             return false;
