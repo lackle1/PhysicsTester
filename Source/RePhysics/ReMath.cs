@@ -108,13 +108,8 @@ namespace RePhysics
         }
         public static ReVector Clamp(ReVector value, ReVector a, ReVector b) // Clamp 'value' between 'a' and 'b'
         {
-            float minX = MathF.Min(a.X, b.X);
-            float maxX = MathF.Max(a.X, b.X);
-            float minY = MathF.Min(a.Y, b.Y);
-            float maxY = MathF.Max(a.Y, b.Y);
-
-            float clampedX = Clamp(value.X, minX, maxX);
-            float clampedY = Clamp(value.Y, minY, maxY);
+            float clampedX = ClampBetween(value.X, a.X, b.X);
+            float clampedY = ClampBetween(value.Y, a.Y, b.Y);
 
             return new ReVector(clampedX, clampedY);
         }
@@ -124,6 +119,15 @@ namespace RePhysics
             float max = Math.Max(a, b);
 
             return Clamp(value, min, max);
+        }
+
+        public static float ClosestMultipleOf(float value, float factor)
+        {
+            float quotient = value / factor;
+
+            float result = MathF.Round(quotient) * factor;
+
+            return MathF.Round(quotient) * factor;
         }
     }
 }

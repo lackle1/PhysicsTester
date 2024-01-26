@@ -3,6 +3,7 @@ using SharpDX.Direct3D9;
 using System;
 using System.Numerics;
 using System.Security;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace RePhysics
 {
@@ -35,7 +36,7 @@ namespace RePhysics
             : base(owner, posOffset, width, height, isStatic)
         {
             _posOffset = ReVector.Zero;
-            _angle = angle;
+            Angle = angle;
             _angularVelocity = 0;
             _force = ReVector.Zero;
 
@@ -87,13 +88,16 @@ namespace RePhysics
                 return;
             }
 
+            //Angle = 0f;
+            //AngularVelocity = 0f;
+
             ReVector acceleration = _force / Mass;
             acceleration += gravity;
             _linearVelocity += acceleration * time;
 
             Pos += _linearVelocity * time * ReWorld.PixelsPerMetre;
 
-            Angle += _angularVelocity * time;
+            Angle += AngularVelocity * time;
 
             _force = ReVector.Zero;
 
@@ -122,12 +126,12 @@ namespace RePhysics
 
         public void Rotate(float amount)
         {
-            _angle += amount;
+            Angle += amount;
             _transformUpdateRequired = true;
         }
-        public void RotateTo(float rot)
+        public void RotateTo(float angle)
         {
-            _angle = rot;
+            Angle = angle;
             _transformUpdateRequired = true;
         }
 

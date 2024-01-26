@@ -191,7 +191,7 @@ namespace PhysicsTester
             }
 
             _stopwatch.Restart();
-            _physicsWorld.Step(Globals.deltaTime, 8);
+            _physicsWorld.Step(Globals.deltaTime, 20);
             _stopwatch.Stop();
 
             _totalWorldStepTime += _stopwatch.Elapsed.TotalMilliseconds;
@@ -226,7 +226,7 @@ namespace PhysicsTester
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.Clear(new Color(40, 40, 40));
 
             // TODO: Add your drawing code here
 
@@ -238,10 +238,21 @@ namespace PhysicsTester
             }
 
             float rot = MathF.PI / 4;
-            foreach (var point in _physicsWorld.ContactPointsList)
-            {
-                //Globals.spriteBatch.Draw(_rectangleTexture, ReConverter.ToMGVector2(point), null, Color.Black, rot, new Vector2(_rectangleTexture.Width * 0.5f, _rectangleTexture.Height * 0.5f), 8, SpriteEffects.None, 0);
-            }
+            //foreach (var point in _physicsWorld.ContactPointsList)
+            //{
+            //    Globals.spriteBatch.Draw(_rectangleTexture, ReConverter.ToMGVector2(point), null, Color.Black, rot, new Vector2(_rectangleTexture.Width * 0.5f, _rectangleTexture.Height * 0.5f), 8, SpriteEffects.None, 0);
+            //}
+            //foreach (var contact in _physicsWorld.ContactManifoldList)
+            //{
+            //    Color colour = Color.Black;
+            //    if (contact.NoRotation) colour = Color.Orange;
+            //    Globals.spriteBatch.Draw(_rectangleTexture, ReConverter.ToMGVector2(contact.Contact1), null, colour, rot, new Vector2(_rectangleTexture.Width * 0.5f, _rectangleTexture.Height * 0.5f), 8, SpriteEffects.None, 0);
+
+            //    if (contact.ContactCount == 2)
+            //    {
+            //        Globals.spriteBatch.Draw(_rectangleTexture, ReConverter.ToMGVector2(contact.Contact2), null, colour, rot, new Vector2(_rectangleTexture.Width * 0.5f, _rectangleTexture.Height * 0.5f), 8, SpriteEffects.None, 0);
+            //    }
+            //}
 
             Globals.spriteBatch.End();
 

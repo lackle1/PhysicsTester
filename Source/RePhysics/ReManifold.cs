@@ -18,10 +18,13 @@ namespace RePhysics
         public readonly ReVector Contact2;
         public readonly int ContactCount;
 
+        public readonly bool NoRotation;
+
         public ReManifold(
             ReBoxBody bodyA, ReBoxBody bodyB,
             ReVector normal, float depth,
-            ReVector contact1, ReVector contact2, int contactCount)
+            ReVector contact1, ReVector contact2, int contactCount,
+            bool noRotation)
         {
             BodyA = bodyA;
             BodyB = bodyB;
@@ -31,6 +34,8 @@ namespace RePhysics
             Contact1 = contact1;
             Contact2 = contact2;
             ContactCount = contactCount;
+
+            NoRotation = noRotation;
         }
     }
 }

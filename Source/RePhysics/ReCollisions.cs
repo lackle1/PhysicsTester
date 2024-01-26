@@ -117,17 +117,19 @@ namespace RePhysics
             return false;
         }
 
-        public static void FindContactPoints(ReBoxBody bodyA, ReBoxBody bodyB, out ReVector cp1, out ReVector cp2, out int cpCount) // cp = contact point
+        public static void FindContactPoints(ReBoxBody bodyA, ReBoxBody bodyB, out ReVector cp1, out ReVector cp2, out int cpCount, out bool noRotation) // cp = contact point
         {
             cp1 = ReVector.Zero;
             cp2 = ReVector.Zero;
             cpCount = 0;
 
+            noRotation = false;
+
             if (bodyA.IsAABB)
             {
                 if (bodyB.IsOBB)
                 {
-                    FindBoxContactPoints(bodyA.GetTransformedVertices(), bodyB.PhysicsVer.GetTransformedVertices(), out cp1, out cp2, out cpCount);
+                    FindBoxContactPoints(bodyA.GetTransformedVertices(), bodyB.PhysicsVer.GetTransformedVertices(), out cp1, out cp2, out cpCount, out noRotation);
                 }
                 else if (bodyB.IsCircle)
                 {
@@ -139,11 +141,11 @@ namespace RePhysics
             {
                 if (bodyA.IsAABB)
                 {
-                    FindBoxContactPoints(bodyA.PhysicsVer.GetTransformedVertices(), bodyB.GetTransformedVertices(), out cp1, out cp2, out cpCount);
+                    FindBoxContactPoints(bodyA.PhysicsVer.GetTransformedVertices(), bodyB.GetTransformedVertices(), out cp1, out cp2, out cpCount, out noRotation);
                 }
                 else if (bodyB.IsOBB)
                 {
-                    FindBoxContactPoints(bodyA.PhysicsVer.GetTransformedVertices(), bodyB.PhysicsVer.GetTransformedVertices(), out cp1, out cp2, out cpCount);
+                    FindBoxContactPoints(bodyA.PhysicsVer.GetTransformedVertices(), bodyB.PhysicsVer.GetTransformedVertices(), out cp1, out cp2, out cpCount, out noRotation);
                 }
                 else if (bodyB.IsCircle)
                 {
@@ -172,17 +174,35 @@ namespace RePhysics
             }
         }
 
-        public static void FindBoxContactPoints(ReVector[] aVertices, ReVector[] bVertices, out ReVector cp1,  out ReVector cp2, out int cpCount)
+        public static void FindBoxContactPoints(ReVector[] aVertices, ReVector[] bVertices, out ReVector cp1,  out ReVector cp2, out int cpCount, out bool noRotation)
         {
             cp1 = ReVector.Zero;
             cp2 = ReVector.Zero;
             cpCount = 0;
+            noRotation = false;
 
             float minDistSqrd = float.MaxValue;
+
+            float minXA = float.MaxValue; // For testing if the collision should allow rotation or not.
+            float maxXA = float.MinValue;
+            float minXB = float.MaxValue;
+            float maxXB = float.MinValue;
+
+            float minYA = float.MaxValue;
+            float minYB = float.MaxValue;
+
+            float highestBodyWidth; // width of the highest body
+
 
             for (int i = 0; i < aVertices.Length; i++)
             {
                 ReVector p = aVertices[i];
+
+                if (p.X < minXA) minXA = p.X;
+                if (p.X > maxXA) maxXA = p.X;
+
+                if (p.Y < minYA) minYA = p.Y;
+
 
                 for (int j = 0; j < bVertices.Length; j++)
                 {
@@ -207,9 +227,15 @@ namespace RePhysics
                     }
                 }
             }
+
             for (int i = 0; i < bVertices.Length; i++)
             {
                 ReVector p = bVertices[i];
+
+                if (p.X < minXB) minXB = p.X;
+                if (p.X > maxXB) maxXB = p.X;
+
+                if (p.Y < minYB) minYB = p.Y;
 
                 for (int j = 0; j < aVertices.Length; j++)
                 {
@@ -222,10 +248,9 @@ namespace RePhysics
                     {
                         if (!ReMath.AboutEqual(cp1, contact, 0.00005f))
                         {
-
+                            cp2 = contact;
+                            cpCount = 2;
                         }
-                        cp2 = contact;
-                        cpCount = 2;
                     }
                     if (distSqrd < minDistSqrd)
                     {
@@ -233,6 +258,29 @@ namespace RePhysics
                         cp1 = contact;
                         cpCount = 1;
                     }
+                }
+            }
+
+            if (cpCount == 2) // Don't know if 'MathF.Abs(normal.Y) == 1' is needed here.
+            {
+                if (minYA < minYB)
+                {
+                    highestBodyWidth = maxXA - minXA;
+                }
+                else
+                {
+                    highestBodyWidth = maxXB - minXB;
+                }
+
+                if (cp1.X > minXA && cp1.X < maxXA && cp2.X > minXA && cp2.X < maxXA &&
+                    !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f)) // center of contact must be close to centre of mass
+                {
+                    noRotation = true;
+                }
+                else if (cp1.X > minXB && cp1.X < maxXB && cp2.X > minXB && cp2.X < maxXB &&
+                    !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f))
+                {
+                    noRotation = true;
                 }
             }
         }
@@ -290,7 +338,7 @@ namespace RePhysics
 
         public static bool IntersectingRects(ReRect a, ReRect b)
         {
-            return a.Left < b.Right && a.Right > b.Left && a.Top < b.Bottom + 1 && a.Bottom > b.Top;
+            return a.Left < b.Right && a.Right > b.Left && a.Top < b.Bottom && a.Bottom > b.Top;
         }
 
 

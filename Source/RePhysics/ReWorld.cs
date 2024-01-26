@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
+using System.Linq.Expressions;
 using System.Reflection.Metadata.Ecma335;
 using Grondslag;
 using Microsoft.Xna.Framework;
@@ -43,7 +44,7 @@ namespace RePhysics
         public int StepCount = 0;
         public int UpdateCount = 0;
 
-        public int counter;
+        public List<ReManifold> ContactManifoldList = new();
 
         public ReWorld()
         {
@@ -94,6 +95,7 @@ namespace RePhysics
             time /= (float)iterations;
 
             ContactPointsList.Clear();
+            ContactManifoldList.Clear();
 
             for (int currentIteration = 0; currentIteration < iterations; currentIteration++)
             {
@@ -119,7 +121,7 @@ namespace RePhysics
             {
                 _bodyList[i].Step(_gravity, time); // Seems to automatically call the physics version
 
-                if (_bodyList[i].Pos.Y > 1000)
+                if (_bodyList[i].Pos.Y > 2000)
                 {
                     RemoveBody(i);
                 }
@@ -164,29 +166,31 @@ namespace RePhysics
 
                     if (bodyA.IsAABB && bodyB.IsAABB)
                     {
-                        contact = new ReManifold(bodyA, bodyB, normal, depth, ReVector.Zero, ReVector.Zero, 0);
+                        contact = new ReManifold(bodyA, bodyB, normal, depth, ReVector.Zero, ReVector.Zero, 0, true);
                     }
                     else
                     {
-                        ReCollisions.FindContactPoints(bodyA, bodyB, out ReVector cp1, out ReVector cp2, out int cpCount);
-                        contact = new ReManifold(bodyA, bodyB, normal, depth, cp1, cp2, cpCount);
+                        ReCollisions.FindContactPoints(bodyA, bodyB, out ReVector cp1, out ReVector cp2, out int cpCount, out bool noRotation);
+                        contact = new ReManifold(bodyA, bodyB, normal, depth, cp1, cp2, cpCount, noRotation);
                     }
+
+                    ContactManifoldList.Add(contact);
 
                     ResolveCollision(contact);
 
                     // For displaying contact points (DEBUG).
-                    if (contact.ContactCount > 0)
-                    {
-                        if (!ContactPointsList.Contains(contact.Contact1))
-                        {
-                            ContactPointsList.Add(contact.Contact1);
-                        }
+                    //if (contact.ContactCount > 0)
+                    //{
+                    //    if (!ContactPointsList.Contains(contact.Contact1))
+                    //    {
+                    //        ContactPointsList.Add(contact.Contact1);
+                    //    }
 
-                        if (contact.ContactCount > 1 && !ContactPointsList.Contains(contact.Contact2))
-                        {
-                            ContactPointsList.Add(contact.Contact2);
-                        }
-                    }
+                    //    if (contact.ContactCount > 1 && !ContactPointsList.Contains(contact.Contact2))
+                    //    {
+                    //        ContactPointsList.Add(contact.Contact2);
+                    //    }
+                    //}
                 }                
             }
         }
@@ -216,9 +220,7 @@ namespace RePhysics
 
             if (!bodyA.IsAABB && !bodyB.IsAABB)
             {
-                //ResolvePhysicsCollisionBasic(bodyA.PhysicsVer, bodyB.PhysicsVer, normal, depth);
                 ResolvePhysicsCollisionWithRotationAndFriction(in contact);
-                ResolveCount++;
             }
             else if (!bodyA.IsAABB && bodyB.IsAABB)
             {
@@ -492,22 +494,71 @@ namespace RePhysics
                 avgContact += contact2;
                 avgContact /= 2f;
             }
-            for (int i = 0; i < contactCount; i++)
-            {
-                impulseList[i] = ReVector.Zero;
-                raList[i] = ReVector.Zero;
-                rbList[i] = ReVector.Zero;
-            }
 
             float e = (bodyA.Restitution + bodyB.Restitution) / 2f;
-            e = 0.3f;
+            //e = 0.05f;
             
             float staticFriction = (bodyA.StaticFriction + bodyB.StaticFriction) * 0.5f;
             float dynamicFriction = (bodyA.DynamicFriction + bodyB.DynamicFriction) * 0.5f;
 
+            //bodyB.LinearVelocityPixels = ReVector.Zero;
+            //bodyB.AngularVelocity = 0f;
+            //bodyB.Angle = 4.71238888038f;
+            //            4.71238898038
 
-            ReVector ra = (avgContact - bodyA.Pos);
-            ReVector rb = (avgContact - bodyB.Pos);
+            // Everything seems to be good when angle is a multiple of half of pi
+            // Try incrementing AngularVelocity by a value that brings Angle closer to the nearest multiple of PI / 2
+            // Always oppose current velocity as well
+
+            // bodyB.AngularVelocity +=
+
+            //if (ReMath.AboutEqual(bodyB.AngularVelocity, 0f, 0.005f))
+            //{
+            //    bodyB.AngularVelocity = 0f;
+
+            //    float closestAngle = bodyB.Angle / MathF.PI / 2;
+            //    closestAngle = MathF.Round(closestAngle);
+            //    bodyB.Angle = closestAngle;
+            //    //if (ReMath.AboutEqual(bodyB.Angle, closestAngle, 0.005))
+            //    //{
+
+            //    //}
+            //}
+
+            ReVector ra = avgContact - bodyA.Pos;
+            ReVector rb = avgContact - bodyB.Pos;
+
+            //if (ReMath.AboutEqual(rb.X, 0f, 0.005f))
+            //{
+            //    rb.X = 0f;
+            //}
+            //if (ReMath.AboutEqual(rb.Y, 0f, 0.005f))
+            //{
+            //    rb.Y = 0f;
+            //}
+
+            //if (ReMath.AboutEqual(bodyA.LinearVelocityPixels.X, 0f, 0.005f))
+            //{
+            //    bodyA.LinearVelocityPixels = new ReVector(0f, bodyA.LinearVelocityPixels.Y);
+            //}
+            //if (ReMath.AboutEqual(bodyA.AngularVelocity, 0f, 0.005f))
+            //{
+            //    bodyA.AngularVelocity = 0f;
+            //}
+
+            //if (ReMath.AboutEqual(bodyB.LinearVelocityPixels.X, 0f, 0.05f))
+            //{
+            //    bodyB.LinearVelocityPixels = new ReVector(0f, bodyB.LinearVelocityPixels.Y);
+            //}
+            //if (ReMath.AboutEqual(bodyB.AngularVelocity, 0f, 0.0005f))
+            //{
+            //    bodyB.AngularVelocity = 0f;
+            //}
+
+            if (ReMath.AboutEqual(normal.X, 0f, 0.0005f))
+            {
+                normal.X = 0f;
+            }
 
             ReVector rAPerp = new ReVector(-ra.Y, ra.X);
             ReVector rBPerp = new ReVector(-rb.Y, rb.X);
@@ -542,7 +593,7 @@ namespace RePhysics
             ReVector impulse = j * normal;
 
             bodyA.LinearVelocityPixels += -impulse * bodyA.InvMass;
-            bodyA.AngularVelocity += -ReMath.Cross(ra, impulse) * bodyA.InvMomentOfInertia;
+            bodyA.AngularVelocity += -ReMath.Cross(ra, impulse) * bodyA.InvMomentOfInertia * 0.5f;
 
             bodyB.LinearVelocityPixels += impulse * bodyB.InvMass;
             bodyB.AngularVelocity += ReMath.Cross(rb, impulse) * bodyB.InvMomentOfInertia * 0.5f;
@@ -555,6 +606,31 @@ namespace RePhysics
             ReVector tangent = relativeVelocity - ReMath.Dot(relativeVelocity, normal) * normal;
             if (ReMath.AboutEqual(tangent, ReVector.Zero, 0.005f))
             {
+                if (contact.NoRotation)
+                {
+                    if (!bodyA.IsStatic && !bodyA.IsAABB)
+                    {
+                        bodyA.Angle = ReMath.ClosestMultipleOf(bodyA.Angle, MathF.PI / 2);
+                        bodyA.AngularVelocity = 0f;
+
+                        if (MathF.Abs(bodyA.LinearVelocityPixels.X) < 0.05)
+                        {
+                            bodyA.LinearVelocityPixels = new ReVector(0f, bodyA.LinearVelocityPixels.Y);
+                        }
+                    }
+
+                    if (!bodyB.IsStatic && !bodyB.IsAABB)
+                    {
+                        bodyB.Angle = ReMath.ClosestMultipleOf(bodyB.Angle, MathF.PI / 2);
+                        bodyB.AngularVelocity = 0f;
+
+                        if (MathF.Abs(bodyB.LinearVelocityPixels.X) < 0.05)
+                        {
+                            bodyB.LinearVelocityPixels = new ReVector(0f, bodyB.LinearVelocityPixels.Y);
+                        }
+                    }
+                }
+
                 return;
             }
 
@@ -582,36 +658,49 @@ namespace RePhysics
             }
 
 
-
-
-            /*
-             * 
-             * Don't need this garbage, just increase the iteration count. Right now, 4 is too little but 8 seems to work.
-             * 
-             */
-            //ReVector aDeltaLV = -frictionImpulse * bodyA.InvMass;
-            //ReVector bDeltaLV = frictionImpulse * bodyB.InvMass;
-            //ReVector aDeltaLVClamped = ReMath.Clamp(aDeltaLV, ReVector.Zero, -bodyA.LinearVelocityPixels);
-            //ReVector bDeltaLVClamped = ReMath.Clamp(bDeltaLV, ReVector.Zero, -bodyB.LinearVelocityPixels);
-
-            //float aDeltaAV = -ReMath.Cross(ra, frictionImpulse) * bodyA.InvMomentOfInertia;
-            //float bDeltaAV = ReMath.Cross(rb, frictionImpulse) * bodyB.InvMomentOfInertia;
-            //float aDeltaAVClamped = ReMath.ClampBetween(aDeltaAV, 0f, -bodyA.AngularVelocity);
-            //float bDeltaAVClamped = ReMath.ClampBetween(bDeltaAV, 0f, -bodyB.AngularVelocity);
-
-            //bodyA.LinearVelocityPixels += aDeltaLVClamped;
-            //bodyA.AngularVelocity += (aDeltaAVClamped != 0) ? -aDeltaAVClamped : -bodyA.AngularVelocity * 0.05f;
-
-            //bodyB.LinearVelocityPixels += bDeltaLVClamped;
-            //bodyB.AngularVelocity += (bDeltaAVClamped != 0) ? bDeltaAVClamped : -bodyB.AngularVelocity * 0.05f;
-
-            bodyA.LinearVelocityPixels += -frictionImpulse * bodyA.InvMass; ;
+            bodyA.LinearVelocityPixels += ReMath.Clamp(frictionImpulse * bodyA.InvMass, ReVector.Zero, -bodyA.LinearVelocityPixels);
+            //bodyA.LinearVelocityPixels += frictionImpulse * bodyA.InvMass;
             bodyA.AngularVelocity += -ReMath.Cross(ra, frictionImpulse) * bodyA.InvMomentOfInertia;
 
-            bodyB.LinearVelocityPixels += frictionImpulse * bodyB.InvMass; ;
+            bodyB.LinearVelocityPixels += ReMath.Clamp(frictionImpulse * bodyB.InvMass, ReVector.Zero, -bodyB.LinearVelocityPixels);
+            //bodyB.LinearVelocityPixels += frictionImpulse * bodyB.InvMass;
             bodyB.AngularVelocity += ReMath.Cross(rb, frictionImpulse) * bodyB.InvMomentOfInertia;
 
             #endregion
+
+            // Extra acceleration towards zero velocity
+
+            //ReVector linear = new ReVector(-MathF.CopySign(0.005f, bodyA.LinearVelocityPixels.X), -MathF.CopySign(0.005f, bodyA.LinearVelocityPixels.Y));
+            //float angular = -MathF.CopySign(0.0005f, bodyA.AngularVelocity);
+
+
+            //linear = new ReVector(-MathF.CopySign(0.005f, bodyB.LinearVelocityPixels.X), -MathF.CopySign(0.005f, bodyB.LinearVelocityPixels.Y));
+            //angular = -MathF.CopySign(0.0005f, bodyB.AngularVelocity);
+
+            if (contact.NoRotation)
+            {
+                if (!bodyA.IsStatic && !bodyA.IsAABB)
+                {
+                    bodyA.Angle = ReMath.ClosestMultipleOf(bodyA.Angle, MathF.PI / 2);
+                    bodyA.AngularVelocity = 0f;
+
+                    if (MathF.Abs(bodyA.LinearVelocityPixels.X) < 0.05)
+                    {
+                        bodyA.LinearVelocityPixels = new ReVector(0f, bodyA.LinearVelocityPixels.Y);
+                    }
+                }
+
+                if (!bodyB.IsStatic && !bodyB.IsAABB)
+                {
+                    bodyB.Angle = ReMath.ClosestMultipleOf(bodyB.Angle, MathF.PI / 2);
+                    bodyB.AngularVelocity = 0f;
+
+                    if (MathF.Abs(bodyB.LinearVelocityPixels.X) < 0.05)
+                    {
+                        bodyB.LinearVelocityPixels = new ReVector(0f, bodyB.LinearVelocityPixels.Y);
+                    }
+                }
+            }
         }
     }
 }

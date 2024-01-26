@@ -197,7 +197,7 @@ namespace RePhysics
             }
             else
             {
-                return PhysicsVer.GetAABB(); // This is apparently unnecessary, for some reason, as it will go straight to the overriding version
+                return PhysicsVer.GetAABB(); // This is apparently unnecessary, as it seems to go straight to the overriding version. I will leave it here to be explicit though.
             }
         }
 

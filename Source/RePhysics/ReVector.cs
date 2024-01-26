@@ -93,6 +93,14 @@ namespace RePhysics
         {
             return this.X == other.X && this.Y == other.Y;
         }
+        public static bool operator ==(ReVector a, ReVector b)
+        {
+            return a.Equals(b);
+        }
+        public static bool operator !=(ReVector a, ReVector b)
+        {
+            return !a.Equals(b);
+        }
         public override bool Equals(object obj)
         {
             if (obj is ReVector other)
