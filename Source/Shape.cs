@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework;
 
 using Microsoft.Xna.Framework.Graphics;
 using RePhysics;
-using PhysicsTester;
 
 namespace Grondslag
 {

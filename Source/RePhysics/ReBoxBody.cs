@@ -2,7 +2,6 @@
 
 using Grondslag;
 using Microsoft.Xna.Framework;
-using PhysicsTester;
 
 namespace RePhysics
 {

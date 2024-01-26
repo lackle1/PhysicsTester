@@ -1,5 +1,4 @@
-﻿using PhysicsTester;
-using SharpDX.Direct3D9;
+﻿using SharpDX.Direct3D9;
 using System;
 using System.Numerics;
 using System.Security;
