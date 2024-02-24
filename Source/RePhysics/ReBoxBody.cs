@@ -5,7 +5,14 @@ using Microsoft.Xna.Framework;
 
 namespace RePhysics
 {
-    public class ReBoxBody
+    public enum ShapeType
+    {
+        AABB = 0,
+        OBB = 1,
+        Circle = 2
+    }
+
+    public class ReBoxBody // For basic AABB stuff not related much to physics.
     {
         public ICollidable Owner { get; protected set; }
 
@@ -22,7 +29,7 @@ namespace RePhysics
 
         public ShapeType ShapeType;
 
-        public ReBoxBody(ICollidable owner, ReVector posOffset, float width, float height, bool isStatic)
+        public ReBoxBody(ICollidable owner, ReVector posOffset, float width, float height, bool isStatic, int layer)
         {
             Owner = owner;
 
@@ -38,6 +45,8 @@ namespace RePhysics
             _vertices = CreateVertices();
             _transformedVertices = new ReVector[4];
             _transformUpdateRequired = true;
+
+            Layer = layer;
         }
 
         #region Properties
@@ -114,6 +123,12 @@ namespace RePhysics
             get { return _linearVelocity.Y; }
             internal set { _linearVelocity.Y = value; }
         }
+
+        public int Layer
+        {
+            get { return Owner.Layer; }
+            set { Owner.Layer = value; }
+        }
         #endregion
 
         internal virtual void Step(ReVector gravity, float time)
@@ -122,8 +137,7 @@ namespace RePhysics
             {
                 return;
             }
-
-            _acceleration += gravity;
+            
             _linearVelocity += _acceleration * time;
 
             Pos += _linearVelocity * time * ReWorld.PixelsPerMetre;
@@ -223,19 +237,19 @@ namespace RePhysics
 
             restitution = ReMath.Clamp(restitution, 0, 1);
 
-            body = new RePhysicsBody(owner, posOffset, angle, mass, density, restitution, area, isStatic, radius, 0, 0, ShapeType.Circle);
+            body = new RePhysicsBody(owner, posOffset, angle, mass, density, restitution, area, isStatic, radius, 0, 0, ShapeType.Circle, 0);
 
             return true;
         }
 
         public static bool CreateAABBBody(ICollidable owner, ReVector posOffset, float width, float height, bool isStatic, out ReBoxBody body)
         {                      
-            body = new ReBoxBody(owner, posOffset, (int)width, (int)height, isStatic);
+            body = new ReBoxBody(owner, posOffset, (int)width, (int)height, isStatic, 0);
 
             return true;
         }
 
-        public static bool CreateOBBBody(ICollidable owner, ReVector posOffset, float width, float height, float angle, float density, bool isStatic, float restitution, out RePhysicsBody body, out string errorMessage)
+        public static bool CreateOBBBody(ICollidable owner, ReVector posOffset, float width, float height, float angle, float density, bool isStatic, float restitution, int layer, out RePhysicsBody body, out string errorMessage)
         {
             body = null;
             errorMessage = string.Empty;
@@ -258,7 +272,7 @@ namespace RePhysics
 
             restitution = ReMath.Clamp(restitution, 0, 1);
 
-            body = new RePhysicsBody(owner, posOffset, angle, mass, density, restitution, area, isStatic, 0, width, height, ShapeType.OBB);
+            body = new RePhysicsBody(owner, posOffset, angle, mass, density, restitution, area, isStatic, 0, width, height, ShapeType.OBB, layer);
 
             return true;
         }

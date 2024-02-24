@@ -210,9 +210,9 @@ namespace RePhysics
 
                     PointLineSegmentDist(p, vA, vB, out float distSqrd, out ReVector contact);
 
-                    if (ReMath.AboutEqual(distSqrd, minDistSqrd, 0.005f))
+                    if (ReMath.AboutEqual(distSqrd, minDistSqrd, 0.00005f))
                     {
-                        if (!ReMath.AboutEqual(cp1, contact, 0.005f))
+                        if (!ReMath.AboutEqual(cp1, contact, 0.00005f))
                         {
                             cp2 = contact;
                             cpCount = 2;
@@ -260,27 +260,29 @@ namespace RePhysics
                 }
             }
 
-            if (cpCount == 2) // Don't know if 'MathF.Abs(normal.Y) == 1' is needed here.
+            if (cpCount != 2 || !ReMath.AboutEqual(cp1.Y, cp2.Y, 0.005f)) // Don't know if '&& MathF.Abs(normal.Y) != 1' is needed here.
             {
-                if (minYA < minYB)
-                {
-                    highestBodyWidth = maxXA - minXA;
-                }
-                else
-                {
-                    highestBodyWidth = maxXB - minXB;
-                }
+                return;
+            }
 
-                if (cp1.X > minXA && cp1.X < maxXA && cp2.X > minXA && cp2.X < maxXA &&
-                    !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f)) // center of contact must be close to centre of mass
-                {
-                    noRotation = true;
-                }
-                else if (cp1.X > minXB && cp1.X < maxXB && cp2.X > minXB && cp2.X < maxXB &&
-                    !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f))
-                {
-                    noRotation = true;
-                }
+            if (minYA < minYB)
+            {
+                highestBodyWidth = maxXA - minXA;
+            }
+            else
+            {
+                highestBodyWidth = maxXB - minXB;
+            }
+
+            if (cp1.X > minXA && cp1.X < maxXA && cp2.X > minXA && cp2.X < maxXA &&
+                !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f)) // center of contact must be close to centre of mass
+            {
+                noRotation = true;
+            }
+            else if (cp1.X > minXB && cp1.X < maxXB && cp2.X > minXB && cp2.X < maxXB &&
+                !ReMath.AboutEqual(cp2.X - cp1.X, highestBodyWidth / 2, highestBodyWidth * 0.1f))
+            {
+                noRotation = true;
             }
         }
         public static void FindBoxCircleContactPoint(ReVector[] vertices, RePhysicsBody bodyB, out ReVector cp)

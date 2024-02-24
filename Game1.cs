@@ -6,8 +6,6 @@ using Microsoft.Xna.Framework.Input;
 using RePhysics;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.ComponentModel;
-using System.Linq;
 
 namespace PhysicsTester
 {
@@ -84,11 +82,11 @@ namespace PhysicsTester
 
             _physicsWorld = new ReWorld();
 
-            _shapes.Add(new Shape(_rectangleTexture, new Vector2(800, 800), new Vector2(3200, 96), 0f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, out ReBoxBody groundBody));
+            _shapes.Add(new Shape(_rectangleTexture, new Vector2(800, 800), new Vector2(3200, 96), 0f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, 0, out ReBoxBody groundBody));
             _physicsWorld.AddBody(groundBody);
-            _shapes.Add(new Shape(_rectangleTexture, new Vector2(400, 200), new Vector2(600, 32), 0.45f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, out groundBody));
+            _shapes.Add(new Shape(_rectangleTexture, new Vector2(400, 200), new Vector2(600, 32), 0.45f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, 0, out groundBody));
             _physicsWorld.AddBody(groundBody);
-            _shapes.Add(new Shape(_rectangleTexture, new Vector2(1200, 300), new Vector2(600, 32), -0.45f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, out groundBody));
+            _shapes.Add(new Shape(_rectangleTexture, new Vector2(1200, 300), new Vector2(600, 32), -0.45f, true, 0f, Color.DarkOliveGreen, ShapeType.OBB, 0, out groundBody));
             _physicsWorld.AddBody(groundBody);
 
             #region Random placement
@@ -175,7 +173,7 @@ namespace PhysicsTester
                     height += 1;
                 }
 
-                _shapes.Add(new Shape(_rectangleTexture, Globals.MouseWorldPosition, new Vector2(width, height), 0f, false, 0.5f, Color.White, ShapeType.OBB, out ReBoxBody body));
+                _shapes.Add(new Shape(_rectangleTexture, Globals.MouseWorldPosition, new Vector2(width, height), 0f, false, 0.5f, Color.White, ShapeType.OBB, 0, out ReBoxBody body));
                 _physicsWorld.AddBody(body);
                 //_shapes.Add(new Shape(_rectangleTexture, Globals.MouseWorldPosition, new Vector2(width, height), 0f, false, 0.5f, Color.White, ShapeType.OBB, out body));
                 //_physicsWorld.AddBody(body);
@@ -186,8 +184,23 @@ namespace PhysicsTester
             {
                 float diameter = _rand.Next(32, 129);
 
-                _shapes.Add(new Shape(_circleTexture, Globals.MouseWorldPosition, new Vector2(diameter), 0f, false, 0.5f, Color.White, ShapeType.Circle, out ReBoxBody body));
+                _shapes.Add(new Shape(_circleTexture, Globals.MouseWorldPosition, new Vector2(diameter), 0f, false, 0.5f, Color.White, ShapeType.Circle, 0, out ReBoxBody body));
                 _physicsWorld.AddBody(body);
+            }
+            if (Globals.keyboard.GetSinglePress("G"))
+            {
+                float width = _rand.Next(32, 129);
+                float height = _rand.Next(32, 129);
+                _shapes.Add(new Shape(_rectangleTexture, Globals.MouseWorldPosition, new Vector2(width, height), 0f, false, 0.5f, Color.White, ShapeType.OBB, 1, out ReBoxBody bodyA));
+                _physicsWorld.AddBody(bodyA);
+
+                width = _rand.Next(32, 129);
+                height = _rand.Next(32, 129);
+                _shapes.Add(new Shape(_rectangleTexture, Globals.MouseWorldPosition, new Vector2(width, height), 0f, false, 0.5f, Color.White, ShapeType.OBB, 1, out ReBoxBody bodyB));
+                _physicsWorld.AddBody(bodyB);
+
+                ReJoint joint = new ReJoint(bodyA.PhysicsVer, bodyB.PhysicsVer, _rectangleTexture);
+                _physicsWorld.AddJoint(joint);
             }
 
             _stopwatch.Restart();
@@ -234,8 +247,9 @@ namespace PhysicsTester
 
             foreach (Shape shape in _shapes)
             {
-                shape.Draw();
+                shape.Draw(_consolas18);
             }
+            _physicsWorld.DrawDebug();
 
             float rot = MathF.PI / 4;
             //foreach (var point in _physicsWorld.ContactPointsList)

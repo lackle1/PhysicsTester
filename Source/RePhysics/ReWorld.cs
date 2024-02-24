@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Linq.Expressions;
+using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
 using Grondslag;
 using Microsoft.Xna.Framework;
@@ -30,6 +31,7 @@ namespace RePhysics
         private ReVector _gravity;
 
         private List<ReBoxBody> _bodyList;
+        private List<ReJoint> _jointList;
         private List<(int, int)> _contactPairs;
 
         private ReVector[] contactList;
@@ -49,6 +51,7 @@ namespace RePhysics
         {
             _gravity = new ReVector(0f, 9.81f);
             _bodyList = new List<ReBoxBody>();
+            _jointList = new List<ReJoint>();
             _contactPairs = new List<(int, int)>();
 
             ContactPointsList = new List<ReVector>();
@@ -88,6 +91,11 @@ namespace RePhysics
             return true;
         }
 
+        public void AddJoint(ReJoint joint)
+        {
+            _jointList.Add(joint);
+        }
+
         public void Step(float time, int iterations)
         {
             iterations = Math.Clamp(iterations, MinIterations, MaxIterations);
@@ -125,6 +133,10 @@ namespace RePhysics
                     RemoveBody(i);
                 }
             }
+            for (int i = _jointList.Count - 1; i >= 0; i--) // Joints do not currently work very well.
+            {
+                _jointList[i].SolveConstraints();
+            }
         }
         public void BroadPhase()
         {
@@ -140,6 +152,7 @@ namespace RePhysics
                     {
                         continue;
                     }
+                    
 
                     if (!ReCollisions.IntersectingRects(bodyA.GetAABB(), bodyB.GetAABB()))
                     {
@@ -161,7 +174,7 @@ namespace RePhysics
                 {
                     SeparateBodies(bodyA, bodyB, normal * depth);
 
-                    ReManifold contact = default;
+                    ReManifold contact;
 
                     if (bodyA.IsAABB && bodyB.IsAABB)
                     {
@@ -293,14 +306,17 @@ namespace RePhysics
 
             float e = MathF.Min(bodyA.Restitution, bodyB.Restitution);
 
-            this.contactList[0] = contact1;
-            this.contactList[1] = contact2;
+            float staticFriction = (bodyA.StaticFriction + bodyB.StaticFriction) * 0.5f;
+            float dynamicFriction = (bodyA.DynamicFriction + bodyB.DynamicFriction) * 0.5f;
+
+            contactList[0] = contact1;
+            contactList[1] = contact2;
 
             for (int i = 0; i < contactCount; i++)
             {
-                this.impulseList[i] = ReVector.Zero;
-                this.raList[i] = ReVector.Zero;
-                this.rbList[i] = ReVector.Zero;
+                impulseList[i] = ReVector.Zero;
+                raList[i] = ReVector.Zero;
+                rbList[i] = ReVector.Zero;
             }
 
             for (int i = 0; i < contactCount; i++)
@@ -353,6 +369,12 @@ namespace RePhysics
                 bodyA.AngularVelocity += -ReMath.Cross(ra, impulse) * bodyA.InvMomentOfInertia;
                 bodyB.LinearVelocityPixels += impulse * bodyB.InvMass;
                 bodyB.AngularVelocity += ReMath.Cross(rb, impulse) * bodyB.InvMomentOfInertia;
+            }
+
+            //Friction
+            for (int i = 0; i < contactCount; i++)
+            {
+
             }
         }
 
@@ -500,6 +522,7 @@ namespace RePhysics
             float staticFriction = (bodyA.StaticFriction + bodyB.StaticFriction) * 0.5f;
             float dynamicFriction = (bodyA.DynamicFriction + bodyB.DynamicFriction) * 0.5f;
 
+
             //bodyB.LinearVelocityPixels = ReVector.Zero;
             //bodyB.AngularVelocity = 0f;
             //bodyB.Angle = 4.71238888038f;
@@ -592,43 +615,27 @@ namespace RePhysics
             ReVector impulse = j * normal;
 
             bodyA.LinearVelocityPixels += -impulse * bodyA.InvMass;
-            bodyA.AngularVelocity += -ReMath.Cross(ra, impulse) * bodyA.InvMomentOfInertia * 0.5f;
+            bodyA.AngularVelocity += -ReMath.Cross(ra, impulse) * bodyA.InvMomentOfInertia;
 
             bodyB.LinearVelocityPixels += impulse * bodyB.InvMass;
-            bodyB.AngularVelocity += ReMath.Cross(rb, impulse) * bodyB.InvMomentOfInertia * 0.5f;
+            bodyB.AngularVelocity += ReMath.Cross(rb, impulse) * bodyB.InvMomentOfInertia;
 
             #endregion
 
 
             #region Friction
 
+            //pointLinearVelocityA = rAPerp * bodyA.AngularVelocity; // Re-calculating relative velocity
+            //pointLinearVelocityB = rBPerp * bodyB.AngularVelocity;
+
+            //relativeVelocity =
+            //    bodyB.LinearVelocityPixels + pointLinearVelocityB
+            //    - (bodyA.LinearVelocityPixels + pointLinearVelocityA);
+
             ReVector tangent = relativeVelocity - ReMath.Dot(relativeVelocity, normal) * normal;
             if (ReMath.AboutEqual(tangent, ReVector.Zero, 0.005f))
             {
-                if (contact.NoRotation)
-                {
-                    if (!bodyA.IsStatic && !bodyA.IsAABB)
-                    {
-                        bodyA.Angle = ReMath.ClosestMultipleOf(bodyA.Angle, MathF.PI / 2);
-                        bodyA.AngularVelocity = 0f;
-
-                        if (MathF.Abs(bodyA.LinearVelocityPixels.X) < 0.05)
-                        {
-                            bodyA.LinearVelocityPixels = new ReVector(0f, bodyA.LinearVelocityPixels.Y);
-                        }
-                    }
-
-                    if (!bodyB.IsStatic && !bodyB.IsAABB)
-                    {
-                        bodyB.Angle = ReMath.ClosestMultipleOf(bodyB.Angle, MathF.PI / 2);
-                        bodyB.AngularVelocity = 0f;
-
-                        if (MathF.Abs(bodyB.LinearVelocityPixels.X) < 0.05)
-                        {
-                            bodyB.LinearVelocityPixels = new ReVector(0f, bodyB.LinearVelocityPixels.Y);
-                        }
-                    }
-                }
+                SettleObject(contact.NoRotation, bodyA, bodyB);
 
                 return;
             }
@@ -669,14 +676,27 @@ namespace RePhysics
 
             // Extra acceleration towards zero velocity
 
-            //ReVector linear = new ReVector(-MathF.CopySign(0.005f, bodyA.LinearVelocityPixels.X), -MathF.CopySign(0.005f, bodyA.LinearVelocityPixels.Y));
-            //float angular = -MathF.CopySign(0.0005f, bodyA.AngularVelocity);
+            ReVector linear = new ReVector(-MathF.CopySign(0.0005f, bodyA.LinearVelocityPixels.X), -MathF.CopySign(0.0005f, bodyA.LinearVelocityPixels.Y));
+            float angular = -MathF.CopySign(0.0005f, bodyA.AngularVelocity);
+
+            //bodyA.LinearVelocity += linear;
+            //bodyA.AngularVelocity += angular;
 
 
-            //linear = new ReVector(-MathF.CopySign(0.005f, bodyB.LinearVelocityPixels.X), -MathF.CopySign(0.005f, bodyB.LinearVelocityPixels.Y));
-            //angular = -MathF.CopySign(0.0005f, bodyB.AngularVelocity);
+            linear = new ReVector(-MathF.CopySign(0.0005f, bodyB.LinearVelocityPixels.X), -MathF.CopySign(0.0005f, bodyB.LinearVelocityPixels.Y));
+            angular = -MathF.CopySign(0.00005f, bodyB.AngularVelocity);
 
-            if (contact.NoRotation)
+            //bodyB.LinearVelocity += linear;
+            //bodyB.AngularVelocity += angular;
+
+
+
+            SettleObject(contact.NoRotation, bodyA, bodyB);
+        }
+
+        private void SettleObject(bool noRotation, RePhysicsBody bodyA, RePhysicsBody bodyB) // Stops the body from moving and snaps its angle to the closest multiple of PI/2 if the normal is right
+        {
+            if (noRotation)
             {
                 if (!bodyA.IsStatic && !bodyA.IsAABB)
                 {
@@ -699,6 +719,14 @@ namespace RePhysics
                         bodyB.LinearVelocityPixels = new ReVector(0f, bodyB.LinearVelocityPixels.Y);
                     }
                 }
+            }
+        }
+
+        public void DrawDebug()
+        {
+            for (int i = 0; i < _jointList.Count; i++)
+            {
+                _jointList[i].Draw();
             }
         }
     }

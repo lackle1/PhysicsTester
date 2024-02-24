@@ -1,19 +1,13 @@
 ﻿using SharpDX.Direct3D9;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 using System.Security;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace RePhysics
 {
-    public enum ShapeType
-    {
-        AABB = 0,
-        OBB = 1,
-        Circle = 2
-    }
-
-    public class RePhysicsBody : ReBoxBody // Ragdoll limb/body part will inherit from RePhysicsBody
+    public class RePhysicsBody : ReBoxBody // For physics stuff
     {
         private float _angle; // radians
         private float _angularVelocity;
@@ -31,8 +25,16 @@ namespace RePhysics
 
         public readonly float Radius;
 
-        public RePhysicsBody(ICollidable owner, ReVector posOffset, float angle, float mass, float density, float restitution, float area, bool isStatic, float radius, float width, float height, ShapeType shapeType)
-            : base(owner, posOffset, width, height, isStatic)
+        private readonly static int _maxNumStoredValues = 240; // Static so that it can be referenced below
+        private int _numStoredValues;
+        private ReVector[] _recentPositions = new ReVector[_maxNumStoredValues];
+        private float[] _recentAngles = new float[_maxNumStoredValues];
+        private int _currentIndex = 0;
+
+        private List<ReJoint> _jointList;
+
+        public RePhysicsBody(ICollidable owner, ReVector posOffset, float angle, float mass, float density, float restitution, float area, bool isStatic, float radius, float width, float height, ShapeType shapeType, int layer)
+            : base(owner, posOffset, width, height, isStatic, layer)
         {
             _posOffset = ReVector.Zero;
             Angle = angle;
@@ -67,6 +69,8 @@ namespace RePhysics
                 _transformedVertices = new ReVector[4];
                 _transformUpdateRequired = true;
             }
+
+            _jointList = new List<ReJoint>();
         }
 
         public float Angle
@@ -87,20 +91,58 @@ namespace RePhysics
                 return;
             }
 
-            //Angle = 0f;
-            //AngularVelocity = 0f;
+            RecordPositionAndAngle();
+            GetAveragePositionAndAngle(out ReVector avgPosition, out float avgAngle);
+
+            
 
             ReVector acceleration = _force / Mass;
             acceleration += gravity;
-            _linearVelocity += acceleration * time;
+            LinearVelocity += acceleration * time;
 
-            Pos += _linearVelocity * time * ReWorld.PixelsPerMetre;
+            Move(LinearVelocity * time * ReWorld.PixelsPerMetre);
 
-            Angle += AngularVelocity * time;
+            Angle += AngularVelocity * time; //  * 0.995f
 
             _force = ReVector.Zero;
 
             _transformUpdateRequired = true;
+
+            //if (_numStoredValues >= _maxNumStoredValues && ReMath.AboutEqual(avgPosition, LinearVelocity, 0.05f) && ReMath.AboutEqual(avgAngle, AngularVelcoity, 0.05f))
+            if (_numStoredValues >= _maxNumStoredValues && ReMath.AboutEqual(avgPosition, Pos, 0.05f) && ReMath.AboutEqual(avgAngle, Angle, 0.0005f))
+            {
+                if (ReMath.AboutEqual(LinearVelocity, ReVector.Zero, 0.05f) && ReMath.AboutEqual(AngularVelocity, 0f, 0.005f))
+                {
+                    LinearVelocity = ReVector.Zero;
+                    AngularVelocity = 0f;
+                }
+            }
+        }
+
+        private void RecordPositionAndAngle()
+        {
+            _recentPositions[_currentIndex] = Pos;
+            _recentAngles[_currentIndex] = Angle;
+
+            //_recentPositions[_currentIndex] = LinearVelocity;
+            //_recentAngles[_currentIndex] = AngularVelocity;
+
+            _currentIndex = (_currentIndex + 1) % _maxNumStoredValues;
+            _numStoredValues = Math.Min(_numStoredValues + 1, _maxNumStoredValues);
+        }
+        private void GetAveragePositionAndAngle(out ReVector avgPosition, out float avgAngle)
+        {
+            ReVector totalPosition = ReVector.Zero;
+            float totalAngle = 0f;
+
+            for (int i = 0; i < _numStoredValues; i++)
+            {
+                totalPosition += _recentPositions[i];
+                totalAngle += _recentAngles[i];
+            }
+
+            avgPosition = totalPosition / _numStoredValues;
+            avgAngle = totalAngle / _numStoredValues;
         }
 
         public void ApplyForce(ReVector amount)
@@ -134,30 +176,10 @@ namespace RePhysics
             _transformUpdateRequired = true;
         }
 
-        //public bool CollidesWithCircle(ReBody b, out ReVector normal, out float depth)
-        //{
-        //    normal = ReVector.Zero;
-        //    depth = 0f;
-
-        //    if (IsCircle)
-        //    {
-        //        float distSqrd = ReMath.DistanceSqrd(Pos, b.Pos);
-        //        float combinedRadii = Radius + b.Radius;
-
-
-        //        if (distSqrd > combinedRadii * combinedRadii)
-        //        {
-        //            return false;
-        //        }
-
-        //        normal = ReMath.Normalise(b.Pos - Pos); // b = a + normal // points towards B
-        //        depth = combinedRadii - MathF.Sqrt(distSqrd);
-
-        //        return true;
-        //    }
-
-        //    return false;
-        //}
+        public void SnapToAngle() // Snaps to 0, 90, 180, 270, etc.
+        {
+            Angle = ReMath.ClosestMultipleOf(Angle, MathF.PI / 2);
+        }
 
         public override ReVector[] GetTransformedVertices()
         {
@@ -173,6 +195,10 @@ namespace RePhysics
             
             _transformUpdateRequired = false;
             return _transformedVertices;
+        }
+        public ReVector GetTransformedPoint(ReVector pos)
+        {
+            return pos.Transform(new ReTransform(Pos, Angle));
         }
         public override ReRect GetAABB()
         {
@@ -204,12 +230,11 @@ namespace RePhysics
                 throw new Exception("Unknown shape type.");
             }
         }
-
         public float GetMomentOfInertia()
         {
             if (IsOBB)
             {
-                return (1f / 12f) * Mass * (Height * Height + Width * Width);
+                return (1f / 12f) * Mass * (Height * Height + Width * Width) * 2;
             }
             else if (IsCircle)
             {
@@ -219,6 +244,11 @@ namespace RePhysics
             {
                 throw new Exception("Unknown ShapeType.");
             }
+        }
+
+        public void AddJoint(ReJoint joint)
+        {
+            _jointList.Add(joint);
         }
     }
 }

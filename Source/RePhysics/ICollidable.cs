@@ -17,6 +17,8 @@ namespace RePhysics
         }
         public ReBoxBody CollisionBody { get; set; }
 
-        public bool Remove {  get; set; }
+        public bool Remove { get; set; }
+
+        public int Layer { get; set; }
     }
 }

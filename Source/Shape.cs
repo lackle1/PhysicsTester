@@ -22,6 +22,7 @@ namespace Grondslag
             set;
         }
         public bool Remove { get; set; }
+        public int Layer { get; set; }
 
         private Texture2D _texture;
         //private Vector2 _pos;
@@ -30,7 +31,7 @@ namespace Grondslag
         public ShapeType shapeType;
 
 
-        public Shape(Texture2D texture, Vector2 pos, Vector2 dims, float angle, bool isStatic, float restitution, Color colour, ShapeType shapeType, out ReBoxBody body)
+        public Shape(Texture2D texture, Vector2 pos, Vector2 dims, float angle, bool isStatic, float restitution, Color colour, ShapeType shapeType, int layer, out ReBoxBody body)
         {
             _texture = texture;
             Pos = pos;
@@ -49,7 +50,7 @@ namespace Grondslag
                 body = boxBody;
                 CollisionBody = body;
             }
-            else if (this.shapeType == ShapeType.OBB && ReBoxBody.CreateOBBBody(this, posOffset, _dims.X, _dims.Y, angle, 1000, isStatic, 0.5f, out RePhysicsBody physicsBody, out errorMessage))
+            else if (this.shapeType == ShapeType.OBB && ReBoxBody.CreateOBBBody(this, posOffset, _dims.X, _dims.Y, angle, 1000, isStatic, 0.5f, layer, out RePhysicsBody physicsBody, out errorMessage))
             {
                 CollisionBody = physicsBody;
                 body = physicsBody;
@@ -79,7 +80,7 @@ namespace Grondslag
             }
         }
 
-        public virtual void Draw()
+        public virtual void Draw(SpriteFont font)
         {
             //(int)MathF.Round(Pos.X + 0.01f), (int)MathF.Round(Pos.Y + 0.01f) // Does not really work, might just have to only use even numbers
             Globals.spriteBatch.Draw(_texture, new Rectangle((int)Pos.X, (int)Pos.Y, (int)_dims.X, (int)_dims.Y), null, colour, Angle, new Vector2(_texture.Width*0.5f, _texture.Height*0.5f), SpriteEffects.None, 0);
@@ -105,6 +106,9 @@ namespace Grondslag
             {
                 //Globals.spriteBatch.Draw(_texture, ReConverter.ToMGVector2(v), null, Color.Black, 0f, new Vector2(_texture.Width * 0.5f, _texture.Height * 0.5f), 8, SpriteEffects.None, 0);
             }
+
+            //Globals.spriteBatch.DrawString(font, CollisionBody.PhysicsVer.LinearVelocity.ToString(), ReConverter.ToMGVector2(edges[0]), Color.Black);
+            //Globals.spriteBatch.DrawString(font, CollisionBody.PhysicsVer.AngularVelocity.ToString(), ReConverter.ToMGVector2(edges[3]), Color.Black);
         }
     }
 }
